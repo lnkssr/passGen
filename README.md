@@ -1,2 +1,21 @@
 # passGen
-passGen is a simple CLI password generator written in Go.   It supports random generation, custom character ranges, dynamic length, and plain string output.
+
+`passGen` is a minimal command-line password generator written in Go.  
+It is designed to be simple, fast, and dependency-free.
+
+## Features
+
+- Full random password generation
+- Custom character ranges
+- Adjustable password length
+- Clean string output
+- Command-line interface (CLI)
+
+## Installation
+
+Clone the repository and build from source:
+
+```bash
+git clone https://github.com/lnkssr/passGen.git
+cd passGen
+make install
