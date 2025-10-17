@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"unicode/utf8"
 )
 
 var (
@@ -48,7 +49,7 @@ func main() {
 
 	var results []string
 	for i := 0; i < opts.count; i++ {
-		pass := generatePassword(opts.length, charset, opts)
+		pass := generatePassword(opts.length, charset)
 		results = append(results, pass)
 	}
 
@@ -115,13 +116,13 @@ func buildCharset(opts options) string {
 	return result
 }
 
-func generatePassword(length int, charset string, opts options) string {
+func generatePassword(length int, charset string) string {
 	if len(charset) == 0 {
 		return ""
 	}
 
 	var sb strings.Builder
-	for i := 0; i < length; i++ {
+	for range make([]struct{}, length) {
 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		sb.WriteByte(charset[n.Int64()])
 	}
@@ -130,27 +131,33 @@ func generatePassword(length int, charset string, opts options) string {
 
 func parseRange(r string) string {
 	var chars []rune
-	parts := strings.Split(r, ",")
-	for _, part := range parts {
+
+	for _, part := range strings.Split(r, ",") {
 		part = strings.TrimSpace(part)
-		if strings.Contains(part, "-") {
-			bounds := strings.Split(part, "-")
-			if len(bounds) == 2 {
-				start := rune(bounds[0][0])
-				end := rune(bounds[1][0])
-				for c := start; c <= end; c++ {
-					chars = append(chars, c)
-				}
-			}
-		} else {
+		if !strings.Contains(part, "-") {
 			chars = append(chars, []rune(part)...)
+			continue
+		}
+
+		bounds := strings.Split(part, "-")
+		if len(bounds) != 2 {
+			continue
+		}
+
+		start, _ := utf8.DecodeLastRuneInString(bounds[0])
+		end, _ := utf8.DecodeLastRuneInString(bounds[1])
+
+		for j := start; j <= end; j++ {
+			chars = append(chars, j)
 		}
 	}
 	return string(chars)
 }
 
 func printHelp() {
-	fmt.Println(`Usage: passGen [FLAGS]... [OPTIONS]...
+	helpText := `
+Usage:
+  passGen [FLAGS]... [OPTIONS]...
 
 Flags:
   -l <num>          length of password (default 12)
@@ -169,5 +176,6 @@ Examples:
   passGen -l 16 --all
   passGen -n 5 --lower --digits
   passGen -g "A-Z,0-9" -l 8
-`)
+`
+	fmt.Print(helpText)
 }
