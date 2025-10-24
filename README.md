@@ -21,7 +21,7 @@ Clone the repository and build from source:
 	make install
 ```
 
-## Build with docker 
+## Build with docker (coming soon)
 
 ``` bash
 	docker build -t passgen-builder .
