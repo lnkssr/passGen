@@ -7,100 +7,97 @@ import (
 )
 
 func TestParseRange(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"A-F", "ABCDEF"},
-		{"0-3", "0123"},
-		{"A-C,1-2", "ABC12"},
-		{"X", "X"},
-		{"a-c,Z", "abcZ"},
+	cases := map[string]string{
+		"A-F":     "ABCDEF",
+		"0-3":     "0123",
+		"A-C,1-2": "ABC12",
+		"X":       "X",
+		"a-c,Z":   "abcZ",
+		"":        "",
 	}
 
-	for _, tt := range tests {
-		got := parseRange(tt.input)
-		if got != tt.want {
-			t.Errorf("parseRange(%q) = %q, want %q", tt.input, got, tt.want)
-		}
+	for input, want := range cases {
+		t.Run(input, func(t *testing.T) {
+			if got := parseRange(input); got != want {
+				t.Errorf("parseRange(%q) = %q, want %q", input, got, want)
+			}
+		})
 	}
 }
 
 func TestBuildCharset_All(t *testing.T) {
-	opts := options{all: true}
-	charset := buildCharset(opts)
+	opts := genOptions{all: true}
+	got := buildCharset(opts)
 
-	if !strings.Contains(charset, "a") ||
-		!strings.Contains(charset, "Z") ||
-		!strings.Contains(charset, "0") ||
-		!strings.Contains(charset, "!") {
-		t.Errorf("buildCharset(all=true) missing expected characters: %q", charset)
+	checks := []string{"a", "Z", "0", "!"}
+	for _, c := range checks {
+		if !strings.Contains(got, c) {
+			t.Errorf("charset missing expected char %q: %q", c, got)
+		}
 	}
 }
 
 func TestBuildCharset_SpecificFlags(t *testing.T) {
-	opts := options{
+	opts := genOptions{
 		lower:  true,
 		upper:  true,
 		digits: true,
-		symbols: false,
 	}
-	charset := buildCharset(opts)
+	got := buildCharset(opts)
 
-	if strings.Contains(charset, "!") {
+	if strings.Contains(got, "!") {
 		t.Error("expected no symbols in charset")
 	}
-	if !strings.Contains(charset, "a") || !strings.Contains(charset, "Z") || !strings.Contains(charset, "9") {
-		t.Errorf("missing expected characters: %q", charset)
+	for _, c := range []string{"a", "Z", "9"} {
+		if !strings.Contains(got, c) {
+			t.Errorf("missing expected char %q in %q", c, got)
+		}
 	}
 }
 
 func TestBuildCharset_NoSimilar(t *testing.T) {
-	opts := options{
-		all:       true,
-		noSimilar: true,
-	}
-	charset := buildCharset(opts)
+	opts := genOptions{all: true, noSimilar: true}
+	got := buildCharset(opts)
+
 	for _, s := range similarChars {
-		if strings.ContainsRune(charset, s) {
+		if strings.ContainsRune(got, s) {
 			t.Errorf("charset contains similar char %q", s)
 		}
 	}
 }
 
 func TestBuildCharset_CustomRange(t *testing.T) {
-	opts := options{
-		custom: "A-C,1-2",
-	}
-	charset := buildCharset(opts)
-	want := "ABC12"
-	for _, c := range want {
-		if !strings.ContainsRune(charset, c) {
-			t.Errorf("expected %q in charset %q", c, charset)
+	opts := genOptions{custom: "A-C,1-2"}
+	got := buildCharset(opts)
+
+	for _, c := range "ABC12" {
+		if !strings.ContainsRune(got, c) {
+			t.Errorf("expected %q in charset %q", c, got)
 		}
 	}
 }
 
-func TestGeneratePassword_LengthAndCharset(t *testing.T) {
-	charset := "ABC123"
-	length := 10
-	pass := generatePassword(length, charset)
+func TestGeneratePassword(t *testing.T) {
+	t.Run("valid charset", func(t *testing.T) {
+		charset := "ABC123"
+		length := 10
+		pass := generatePassword(length, charset)
 
-	if len(pass) != length {
-		t.Fatalf("expected password length %d, got %d", length, len(pass))
-	}
-	for _, c := range pass {
-		if !strings.ContainsRune(charset, c) {
-			t.Fatalf("password contains invalid char %q", c)
+		if len(pass) != length {
+			t.Errorf("expected length %d, got %d", length, len(pass))
 		}
-	}
-}
+		for _, c := range pass {
+			if !strings.ContainsRune(charset, c) {
+				t.Errorf("password contains invalid char %q", c)
+			}
+		}
+	})
 
-func TestGeneratePassword_EmptyCharset(t *testing.T) {
-	pass := generatePassword(10, "")
-	if pass != "" {
-		t.Errorf("expected empty password, got %q", pass)
-	}
+	t.Run("empty charset", func(t *testing.T) {
+		if got := generatePassword(10, ""); got != "" {
+			t.Errorf("expected empty password, got %q", got)
+		}
+	})
 }
 
 func TestJSONOutputFormat(t *testing.T) {
@@ -110,7 +107,10 @@ func TestJSONOutputFormat(t *testing.T) {
 		t.Fatalf("json.MarshalIndent failed: %v", err)
 	}
 
-	if !strings.Contains(string(data), "abc") || !strings.Contains(string(data), "def") {
-		t.Errorf("JSON output missing expected values: %s", string(data))
+	got := string(data)
+	for _, s := range results {
+		if !strings.Contains(got, s) {
+			t.Errorf("JSON output missing %q: %s", s, got)
+		}
 	}
 }
