@@ -16,6 +16,17 @@ It is designed to be simple, fast, and dependency-free.
 Clone the repository and build from source:
 
 ```bash
-git clone https://github.com/lnkssr/passGen.git
-cd passGen
-make install
+	git clone https://github.com/lnkssr/passGen.git
+	cd passGen
+	make install
+```
+
+## Build with docker 
+
+``` bash
+	docker build -t passgen-builder .
+	docker create --name passgen-tmp passgen-builder
+	mkdir -p bin
+	docker cp passgen-tmp:/passGen ./bin/passGen
+	docker rm passgen-tmp
+```
